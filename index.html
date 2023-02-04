@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MIDI Editor Example</title>
+  </head>
+  <body>
+    <div id="controls">
+      <input type="file" id="file-input"/>
+      <label for="velocity-slider">Velocity:</label>
+      <input type="range" id="velocity-slider" min="0" max="127" value="100"/>
+      <button id="play-button" disabled>Play</button>
+    </div>
+    <script>
+      var midiAccess;
+      var output;
+      var midiData;
+  
+      window.addEventListener("load", function() {
+        if (navigator.requestMIDIAccess) {
+          navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
+        } else {
+          console.error("Your browser does not support the Web MIDI API");
+        }
+      });
+  
+      function onMIDISuccess(midi) {
+        midiAccess = midi;
+        var outputs = midiAccess.outputs;
+        output = outputs.values().next().value;
+        document.querySelector("#file-input").addEventListener("change", readMIDIFile);
+        document.querySelector("#play-button").addEventListener("click", playMIDI);
+      }
+  
+      function onMIDIFailure(error) {
+        console.error("Could not access MIDI devices: " + error);
+      }
+  
+      function readMIDIFile(event) {
+        var file = event.target.files[0];
+        var reader = new FileReader();
+        reader.onload = function(event) {
+          midiData = new Uint8Array(event.target.result);
+          document.querySelector("#play-button").disabled = false;
+        };
+        reader.readAsArrayBuffer(file);
+      }
+  
+      function playMIDI() {
+        var velocity = document.querySelector("#velocity-slider").value;
+  
+        // Modify the velocity of the MIDI data
+        for (var i = 0; i < midiData.length; i++) {
+          if (midiData[i] === 0x90) {
+            midiData[i + 2] = velocity;
+          }
+        }
+  
+        output.send(midiData);
+      }
+    </script>
+  </body>
+</html>
