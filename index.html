@@ -5,6 +5,13 @@
       #grid {
         border: 1px solid black;
       }
+      .note {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: blue;
+        border-radius: 5px;
+      }
     </style>
   </head>
   <body>
@@ -67,18 +74,25 @@
         notes.push(note);
         render();
       }
-  
-      function playMIDI() {
-        for (var i = 0; i < notes.length; i++) {
-          var note = notes[i];
-          // send MIDI message to play the note
-          // ...
-        }
+      function render() {
+        var context = grid.getContext("2d");
+        context.clearRect(0, 0, grid.width, grid.height);
+        notes.forEach(function(note) {
+          var noteElement = document.createElement("div");
+          noteElement.classList.add("note");
+          noteElement.style.left = note.x + "px";
+          noteElement.style.top = note.y + "px";
+          grid.appendChild(noteElement);
+        });
       }
   
-      function render() {
-        // draw the notes on the grid
-        // ...
+      function playMIDI() {
+        notes.forEach(function(note) {
+          output.send([0x90, note.y, note.velocity]);
+          setTimeout(function() {
+            output.send([0x80, note.y, 0]);
+          }, note.duration);
+        });
       }
     </script>
   </body>
