@@ -1,61 +1,84 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>MIDI Editor Example</title>
+    <style>
+      #grid {
+        border: 1px solid black;
+      }
+    </style>
   </head>
   <body>
-    <div id="controls">
-      <input type="file" id="file-input"/>
-      <label for="velocity-slider">Velocity:</label>
-      <input type="range" id="velocity-slider" min="0" max="127" value="100"/>
-      <button id="play-button" disabled>Play</button>
-    </div>
+    <canvas id="grid" width="600" height="300"></canvas>
+    <label for="velocity-slider">Velocity:</label>
+    <input type="range" id="velocity-slider" min="0" max="127" value="100"/>
+    <button id="play-button">Play</button>
+    <input type="file" id="input-file" accept="audio/mid"/>
     <script>
       var midiAccess;
       var output;
-      var midiData;
+      var grid;
+      var notes = [];
+      var velocity;
+      var fileInput = document.querySelector("#input-file");
   
       window.addEventListener("load", function() {
-        if (navigator.requestMIDIAccess) {
-          navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
-        } else {
-          console.error("Your browser does not support the Web MIDI API");
-        }
+        navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
+        fileInput.addEventListener("change", function() {
+          var file = fileInput.files[0];
+          var reader = new FileReader();
+          reader.onload = function() {
+            var midiData = new Uint8Array(reader.result);
+            // parse the midi file and extract the notes
+            // ...
+            render();
+          };
+          reader.readAsArrayBuffer(file);
+        });
       });
   
       function onMIDISuccess(midi) {
         midiAccess = midi;
-        var outputs = midiAccess.outputs;
-        output = outputs.values().next().value;
-        document.querySelector("#file-input").addEventListener("change", readMIDIFile);
+        output = midiAccess.outputs.values().next().value;
+        velocity = document.querySelector("#velocity-slider").value;
+        document.querySelector("#velocity-slider").addEventListener("input", updateVelocity);
         document.querySelector("#play-button").addEventListener("click", playMIDI);
+        grid = document.querySelector("#grid");
+        grid.addEventListener("mousedown", addNote);
+        render();
       }
   
       function onMIDIFailure(error) {
         console.error("Could not access MIDI devices: " + error);
       }
   
-      function readMIDIFile(event) {
-        var file = event.target.files[0];
-        var reader = new FileReader();
-        reader.onload = function(event) {
-          midiData = new Uint8Array(event.target.result);
-          document.querySelector("#play-button").disabled = false;
+      function updateVelocity(event) {
+        velocity = event.target.value;
+      }
+  
+      function addNote(event) {
+        var x = event.clientX - grid.offsetLeft;
+        var y = event.clientY - grid.offsetTop;
+        var note = {
+          x: x,
+          y: y,
+          velocity: velocity,
+          duration: 100
         };
-        reader.readAsArrayBuffer(file);
+        notes.push(note);
+        render();
       }
   
       function playMIDI() {
-        var velocity = document.querySelector("#velocity-slider").value;
-  
-        // Modify the velocity of the MIDI data
-        for (var i = 0; i < midiData.length; i++) {
-          if (midiData[i] === 0x90) {
-            midiData[i + 2] = velocity;
-          }
+        for (var i = 0; i < notes.length; i++) {
+          var note = notes[i];
+          // send MIDI message to play the note
+          // ...
         }
+      }
   
-        output.send(midiData);
+      function render() {
+        // draw the notes on the grid
+        // ...
       }
     </script>
   </body>
